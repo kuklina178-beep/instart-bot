@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.bak*
+bot.log
+.env
+data.json.tmp
