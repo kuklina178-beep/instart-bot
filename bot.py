@@ -231,7 +231,8 @@ ICONS = {"welcome": "01_welcome", "about_video": "02_about_video", "test": "03_t
          "guest": "07_guest", "cases": "08_cases", "pay": "09_pay", "farewell": "10_farewell",
          "support": "11_support", "dir_tasks": "13_dir_tasks", "dir_spec": "14_dir_spec",
          "dir_curator": "15_dir_curator", "dir_every": "16_dir_every",
-         "about_me": "17_about_me"}
+         "about_me": "17_about_me", "voice_tariffs": "18_voice_tariffs",
+         "voice_courses": "19_voice_courses"}
 
 
 def send_pic(chat, icon, text, rows=None, markup=None):
@@ -544,6 +545,7 @@ def on_callback(cq):
 
     # --- Тарифы ---
     elif data == "tariffs":
+        send_pic(chat, "voice_tariffs", "🎧 Послушай моё голосовое про тарифы 👇")
         if DB["media"].get("tariffs_voice"):
             send_media(chat, "tariffs_voice")
         else:
@@ -564,6 +566,7 @@ def on_callback(cq):
 
     # --- Курсы ---
     elif data == "courses":
+        send_pic(chat, "voice_courses", "🎧 Послушай моё голосовое про курсы 👇")
         if DB["media"].get("courses_voice"):
             send_media(chat, "courses_voice")
         elif not any([send_voice_file(chat, v) for v in COURSE_VOICES]):
