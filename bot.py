@@ -278,6 +278,13 @@ def send_voice_file(chat, filename):
     return res.get("ok", False)
 
 
+def tariff_rows():
+    """Кнопки 4 тарифов: «Базовый — 1.990 ₽» и т.д."""
+    icons = {"base": "🌱", "standard": "⭐", "premium": "💎", "vip": "👑"}
+    return [[(f"{icons[k]} {C.TARIFFS[k]['name'].replace('Тариф ', '').strip('«»')} — {C.TARIFFS[k]['price']}", f"tariff:{k}")]
+            for k in icons]
+
+
 def pay_rows(k):
     """Кнопки оплаты под описанием тарифа/курса."""
     t = C.TARIFFS[k]
@@ -316,6 +323,7 @@ MAIN_MENU = [
 ]
 BACK = [("📋 Меню", "menu")]
 PAY = [("💳 Оплатить", "pay")]
+COURSE_ROWS = [[(v[0].split(" — ")[0], f"course:{k}")] for k, v in C.COURSES.items()] + [[("💼 Тарифы", "tariffs_list")], BACK]
 
 
 # постоянное нижнее меню (не исчезает)
@@ -552,17 +560,22 @@ def on_callback(cq):
             sent = [send_voice_file(chat, v) for v in TARIFF_VOICES]
             if not any(sent):
                 send(chat, "🎧 Скоро здесь будет голосовое с пояснениями по тарифам")
-        send_photo(chat, C.TARIFFS_IMAGE, C.TARIFFS_TEXT)
-        for k in ("base", "standard", "premium", "vip"):
-            t = C.TARIFFS[k]
-            cap = f"<b>{t['name']}</b> — {t['price']}\n\n" + C.TARIFF_DESC[k]
-            if len(cap) <= 1000:
-                send_photo(chat, t["image"], cap, pay_rows(k))
-            else:
-                send_photo(chat, t["image"], "")
-                send(chat, cap, pay_rows(k))
-        send(chat, "Остались вопросы? Напиши мне 💛", [[("❓ Задать вопрос", C.SUPPORT_LINK)],
-                                                    [("🎓 Курсы", "courses"), ("📋 Меню", "menu")]])
+        rows = tariff_rows()
+        send_photo(chat, C.TARIFFS_IMAGE, C.TARIFFS_TEXT + "\n\nНажми на тариф, чтобы узнать подробности 👇",
+                   rows + [[("🎓 Курсы", "courses")], BACK])
+    elif data.startswith("tariff:"):
+        k = data[7:]
+        t = C.TARIFFS[k]
+        cap = f"<b>{t['name']}</b> — {t['price']}\n\n" + C.TARIFF_DESC[k]
+        rows = pay_rows(k) + [[("💼 Все тарифы", "tariffs_list")], [("❓ Задать вопрос", C.SUPPORT_LINK)], BACK]
+        if len(cap) <= 1000:
+            send_photo(chat, t["image"], cap, rows)
+        else:
+            send_photo(chat, t["image"], "")
+            send(chat, cap, rows)
+    elif data == "tariffs_list":
+        rows = tariff_rows()
+        send(chat, "💼 Выбери тариф 👇", rows + [[("🎓 Курсы", "courses")], BACK])
 
     # --- Курсы ---
     elif data == "courses":
@@ -571,19 +584,15 @@ def on_callback(cq):
             send_media(chat, "courses_voice")
         elif not any([send_voice_file(chat, v) for v in COURSE_VOICES]):
             send(chat, "🎧 Скоро здесь будет голосовое с пояснениями по курсам")
-        send(chat, C.COURSES_INTRO)
-        for k, (title, text, imgs) in C.COURSES.items():
-            for f in imgs:
-                send_photo(chat, f, "")
-            send(chat, text + "\n\n" + C.TARIFF_DESC[k], pay_rows(k))
-        send(chat, "Остались вопросы? Напиши мне 💛", [[("❓ Задать вопрос", C.SUPPORT_LINK)],
-                                                    [("💼 Тарифы", "tariffs"), ("📋 Меню", "menu")]])
+        send(chat, C.COURSES_INTRO + "\n\nНажми на курс, чтобы узнать подробности 👇", COURSE_ROWS)
+    elif data == "courses_list":
+        send(chat, "🎓 Выбери курс 👇", COURSE_ROWS)
     elif data.startswith("course:"):
         k = data[7:]
         title, text, imgs = C.COURSES[k]
         for f in imgs:
             send_photo(chat, f, "")
-        send(chat, text + "\n\n" + C.TARIFF_DESC[k], pay_rows(k) + [[("🎓 Все курсы", "courses")], BACK])
+        send(chat, text + "\n\n" + C.TARIFF_DESC[k], pay_rows(k) + [[("🎓 Все курсы", "courses_list")], [("❓ Задать вопрос", C.SUPPORT_LINK)], BACK])
     elif data == "pay":
         rows = [[(f"{t['name']} — {t['price']}", f"buy:{k}")] for k, t in C.TARIFFS.items()] + [BACK]
         send_sticker(chat, "nachni")
